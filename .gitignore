@@ -1,2 +1,4 @@
 .vscode
 .venv
+test_data
+train_data
