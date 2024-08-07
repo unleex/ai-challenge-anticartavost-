@@ -58,8 +58,12 @@ def extract_R():
     PRETRAINED_MODEL_SAMPLE_RATE = 16000
     LETTER_R_ORD = 23
     MODEL_WINDOW_SIZE = 320
-
-    device = torch.device("mps")
+    if torch.backends.mps.is_available():
+        device = torch.device("mps")
+    elif torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
     processor: Wav2Vec2Processor = Wav2Vec2Processor.from_pretrained(MODEL_ID)
     model: Wav2Vec2ForCTC = Wav2Vec2ForCTC.from_pretrained(MODEL_ID).to(device)
 
