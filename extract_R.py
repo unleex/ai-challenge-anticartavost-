@@ -52,7 +52,7 @@ class SpeechDataset(torch.utils.data.Dataset):
 def extract_R():
     logging.set_verbosity_error()
     ssl._create_default_https_context = ssl._create_unverified_context
-    PATH = "train_audio"
+    PATH = "train_audio_raw"
     LETTER_LENGTH = 0.2
     MODEL_ID = "jonatasgrosman/wav2vec2-large-xlsr-53-russian"
     PRETRAINED_MODEL_SAMPLE_RATE = 16000
@@ -66,7 +66,7 @@ def extract_R():
     labeled_dataset = pd.read_csv("train_gt (1).csv")
     for file in tqdm.tqdm(os.listdir(PATH)):
         audio_label = bool(labeled_dataset[labeled_dataset["Filename"] == file]["Label"].values[0])
-        if os.path.exists(f"{'burr_audio' if audio_label else 'normal_audio'}/{file}_R0.wav"):
+        if os.path.exists(f"{'burr_audio' if audio_label else 'normal_audio'}/{file}_R{i}.wav"):
             continue
         audio, sr = librosa.load(os.path.join(PATH, file))
         audio = torchaudio.functional.resample(torch.tensor(audio), sr, PRETRAINED_MODEL_SAMPLE_RATE)
@@ -87,7 +87,15 @@ def extract_R():
         R_pos = torch.nonzero(predicted_ids_along_time == LETTER_R_ORD).squeeze(1)
         for i, r_pos in enumerate(R_pos):
             r_pos = r_pos.item() * MODEL_WINDOW_SIZE
-            R_data = audio[r_pos - letter_size // 2 : r_pos + letter_size // 2]
+            if r_pos <= letter_size // 2:
+                R_data = audio[: r_pos + letter_size // 2]
+                R_data = torch.nn.functional.pad(R_data, (letter_size // 2 - r_pos, 0), "constant", 0)
+            elif r_pos >= audio.size()[0] - letter_size // 2:
+                R_data = audio[r_pos - letter_size // 2:]
+                R_data = torch.nn.functional.pad(R_data, (0, letter_size // 2 - (audio.size()[0] - r_pos)), "constant", 0)
+            else:
+                R_data = audio[r_pos - letter_size // 2 : r_pos + letter_size // 2]
+            assert R_data.size(0) == 4410, R_data.size(0)
             soundfile.write(
                 f"{'burr_audio' if audio_label else 'normal_audio'}/{file}_R{i}.wav", 
                 R_data, 
