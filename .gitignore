@@ -1,4 +1,13 @@
 .vscode
 .venv
-test_data
-train_data
+test_audio_raw
+train_audio_raw
+burr_audio
+normal_audio
+burr_audio_mel
+normal_audio_mel
+__pycache__
+melspectograms
+test_audio_raw
+test_audio_mel
+research.ipynb
